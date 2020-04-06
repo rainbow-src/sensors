@@ -9,3 +9,5 @@ Each of the folders above corresponds to one of the following papers:
 - D. Zorbas, D. Glynos, P. Kotzanikolaou, C. Douligeris, "Solving coverage problems in wireless sensor networks using cover sets", Ad hoc Networks, Vol. 8, Issue 4, June 2010, Pages 400-415, Elsevier
 
 "terrain generators" folder contains a set of terrain generators developed for the needs of the previously mentioned papers.
+
+For any serious queries, please contact dimzorbas@ieee.org
