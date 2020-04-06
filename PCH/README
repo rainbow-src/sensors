@@ -1,0 +1,11 @@
+In this directory you should find the following files:
+
+LICENSE: GPLv3 License file
+
+pch-dr.pl: Implementation of the PCH algorithm as presented in the paper
+
+
+
+For any further information regarding this software please contact:
+
+Dimitrios Zorbas (jim/at/students/cs/unipi/gr)

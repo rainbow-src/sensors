@@ -1,0 +1,37 @@
+In this directory you should find the following files:
+
+LICENSE: GPLv3 License file
+
+Static and Dynamic CCF Algorithms
+---------------------------------
+static-ccf.pl: Script to generate cover sets with the Static CCF algorithm
+dynamic-ccf.pl: Script to generate cover sets with the Dynamic CCF algorithm
+
+Randomised versions of Algorithms
+---------------------------------
+bgop-random.pl: Randomised version of B{GOP} algorithm
+static-ccf-random.pl : Randomised version of Static CCF algorithm
+dynamic-ccf-random.pl: Randomised version of Dynamic CCF algorithm
+
+Optimisations for a, b, c parameters
+------------------------------------
+In directory a-b-c/ we have:
+
+triangular-bin-search-a-b-c.py : 
+python script to optimise the a, b, c parameters of the static ccf and dynamic
+ccf algorithms with the triangular "binary search" approach. Strictly speaking,
+this is a bit of a misnomer since it may divide a triangle into 6 subtriangles
+if configured so.
+
+best-first-search-a-b-c.py : python script to optimise the a, b, c 
+parameters with a "best first" approach.
+ 
+Both of these scripts use the "theoretical_maximum.pl" script found
+in the top dir, to calculate the theoretical maximum number of possible
+generated sets.
+
+For any further information regarding this software please contact:
+
+Dimitrios Zorbas (jim/at/students/cs/unipi/gr)
+or
+Dimitris Glynos (daglyn/at/unipi/gr)
