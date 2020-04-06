@@ -1,0 +1,306 @@
+diff -u -r -N slijepcevic-orig/Generation.java slijepcevic-upd/Generation.java
+--- slijepcevic-orig/Generation.java	2003-07-06 16:04:18.000000000 +0300
++++ slijepcevic-upd/Generation.java	2006-03-08 20:39:07.000000000 +0200
+@@ -1,3 +1,4 @@
++import java.io.LineNumberReader;
+ import java.util.*;
+ 
+ /** This class generates a 0-1 matrix, where rows represent sensors, while
+@@ -46,4 +47,60 @@
+ 		}
+ 		return new Matrix(sensors,fields);
+ 	}
++	
++	public static Matrix main(int numSensors, int numFields,
++			LineNumberReader reader) {
++		try {
++			sensors = new Vector(numSensors, numSensors / 5);
++			fields = new Vector(numFields, numFields / 5);
++			
++			String line = null;
++			while (line != null) {
++				line = reader.readLine();
++				StringTokenizer strTok = new StringTokenizer(line, " ");
++				int[] array = new int[strTok.countTokens() -1];
++				strTok.nextToken(); //first element of each line is ADF
++				while(strTok.hasMoreTokens()) {
++					String tok = strTok.nextToken();
++					fields.addElement(new Integer(tok));
++					 
++				}
++
++			}
++			
++			for (int i = 0; i < numSensors; i++) {
++				sensors.addElement(Simulation.getSensorObject(0, 0, i));
++			}
++
++			
++			Random r = new Random(System.currentTimeMillis());
++			for (int i = 0; i < numFields; i++) {
++				fields.addElement(Simulation.getFieldObject(i));
++				// System.out.print(i);
++				int covSens = Math.abs(r.nextInt()
++						% (numSensors - numSensors / 9))
++						+ 1 + numSensors / 9;
++				// covSens is the number of sensors that will cover that field
++				while (covSens > 0) {
++					int pick = Math.abs(r.nextInt() % numSensors);
++					Sensor sns = (Sensor) sensors.elementAt(pick);
++					Field fld = (Field) fields.elementAt(i);
++					if (!sns.checkField(fld)) {
++						// add field to that sensor
++						sns.addField(fld);
++						// add sensor to that field
++						fld.addSensor(sns);
++						covSens--;
++					}
++				}
++				// maybe somewhere should be checked are there two fields
++				// covered
++				// by the same set of sensors
++			}
++			return new Matrix(sensors, fields);
++		} catch (Exception e) {
++			e.printStackTrace();
++			return null;
++		}
++	}
+ }
+diff -u -r -N slijepcevic-orig/Sensor.java slijepcevic-upd/Sensor.java
+--- slijepcevic-orig/Sensor.java	2003-07-06 17:49:14.000000000 +0300
++++ slijepcevic-upd/Sensor.java	2006-03-08 20:39:07.000000000 +0200
+@@ -42,6 +42,10 @@
+ 		return sensorId;
+ 	}
+ 
++	public void setId(int value){
++		sensorId = value;
++	}
++	
+ 	/** Returns the number of fields that the sensor covers. */
+ 	public int getFieldsCount() {
+ 		return coverFields.size();
+@@ -88,5 +92,15 @@
+ 		if (coverFields.indexOf(field) == -1) return false;
+ 		else return true;
+ 	}
++	
++	public boolean equals(Object o) {
++		if (o instanceof Sensor) {
++			Sensor s = (Sensor)o;
++			if (s.getId() == this.getId()) {
++				return true;
++			}
++		}
++		return false;
++	}
+ 
+ }
+diff -u -r -N slijepcevic-orig/Simulation.java slijepcevic-upd/Simulation.java
+--- slijepcevic-orig/Simulation.java	2003-07-06 19:47:42.000000000 +0300
++++ slijepcevic-upd/Simulation.java	2006-03-10 20:41:30.000000000 +0200
+@@ -1,13 +1,22 @@
++import java.io.FileInputStream;
++import java.io.FileReader;
++import java.io.LineNumberReader;
+ import java.util.*;
+ 
+ /** This class is the main class of the project. */
+ class Simulation {
++	public Hashtable origSensorNames;
++
+ 	static private final int DEBUG = 6;
+ 
+ 	static public void DBG(int level, String output) {
+ 		if (level <= DEBUG) System.out.println(output);
+ 	}
+ 
++	static public void DBG_no_nl(int level, String output) {
++		if (level <= DEBUG) System.out.print(output);
++	}
++
+ 	static private int Xmax;
+ 	static private int Xmin;
+ 	static private int Ymax;
+@@ -65,15 +74,17 @@
+ 	 *	@param args[2] overall number of fields
+ 	 *  @param args[0] switches between Distribution ("d") and Generation ("g")
+ 	 */
+-	static public void main(String[] args){
++	static public void main(String[] args) throws Exception{
++		Simulation a = new Simulation();
+ 		GregorianCalendar c = new GregorianCalendar();
+ 		//System.out.println("time 1 "+c.getTime().toString());
+ 
+ 		/* sensors are attached to fields by distribution or by generating 
+ 		 * a matrix directly
+ 		 */
+-		int numberOfSensors = Integer.parseInt(args[1]);
++		int numberOfSensors = 0;
+ 		if (args[0].equals("d")) {
++			numberOfSensors = Integer.parseInt(args[1]);
+ 			radius = Integer.parseInt(args[2]);
+ 			int addedSensors = Integer.parseInt(args[3]);
+ 			int rounds = Integer.parseInt(args[4]);
+@@ -86,8 +97,10 @@
+ 				(numberOfSensors,Xmin,Xmax,Ymin,Ymax,Xoutmin,Xoutmax,Youtmin,
+ 				 Youtmax,radius,resolution,addedSensors,rounds,wide);
+ 			Statistics.main(m.field,m.sensor);
+-		}
+-		else {
++		} else if(args[0].equals("f")){
++				m = a.getZorbasMatrix(args[1]);
++		}else {
++			numberOfSensors = Integer.parseInt(args[1]);
+ 			int numberOfFields = Integer.parseInt(args[2]);
+ 			m = Generation.main(numberOfSensors,numberOfFields);
+ 		}
+@@ -97,29 +110,39 @@
+ 		 */
+ 
+ 		GregorianCalendar c2 = new GregorianCalendar();
+-		System.out.println("time 2 "+c2.getTime().toString());
++		// System.out.println("# time 2 "+c2.getTime().toString());
+ 
+ 		/* annealing is done first, because annealing does not change existing
+ 		 * structures that connect fields and sensors
+ 		 */
+-		Annealing.main(m.field,m.sensor);
+-		GregorianCalendar c3 = new GregorianCalendar();
+-		System.out.println("time 3 "+c3.getTime().toString());
++
++		/*
++			Annealing.main(m.field,m.sensor);
++			GregorianCalendar c3 = new GregorianCalendar();
++			System.out.println("# time 3 "+c3.getTime().toString());
++		*/
+ 
+ 		// my algorithm
+-		Simulation.DBG(11,"Run my algorithm");
++		Simulation.DBG(11,"# Run my algorithm");
++		//
++		long time1 = System.currentTimeMillis();
+ 		Result r = WorstFirst.main(m.field,m.sensor);
++		long time2 = System.currentTimeMillis();
++		double time3 = (time2 - time1)/1000.0;
++		System.out.println("# time "+ time3);
+ 		int[][] sets = r.getSets();
++
+ 		for (int i=0; i<r.getSetCounter(); i++) {
+-			Simulation.DBG(11,"Set "+i);
++			Simulation.DBG_no_nl(5,"C"+(i+1)+" : ");
+ 			for (int j=0; j<r.getSetSizes()[i]; j++) {
+-				Simulation.DBG(11,sets[i][j]+" ");
++				Simulation.DBG_no_nl(5, 
++					((Integer) a.origSensorNames.get(new Integer(sets[i][j])))+" ");
+ 			}
+-			Simulation.DBG(11,"");
++			Simulation.DBG(5,"");
+ 		}
+-
++		System.out.println("# generated sets "+r.getSetCounter());
+ 		GregorianCalendar c4 = new GregorianCalendar();
+-		System.out.println("time 4 "+c4.getTime().toString());
++//		System.out.println("# time 4 "+c4.getTime().toString());
+ 		Statistics.finish();
+ 	}
+ 
+@@ -134,4 +157,65 @@
+ 	static public Object getFieldObject(int fieldId) {
+ 		return new MyField(fieldId);
+ 	}
++	
++	public Matrix getZorbasMatrix(String fileName) {
++		try {
++			LineNumberReader reader = new LineNumberReader(new FileReader(fileName));
++			Vector jFields = new Vector();
++			Vector jSensors = new Vector();
++			String line = null;
++			int i = 0;
++			int max = 0;
++			while((line = reader.readLine()) != null) {
++				if (!line.startsWith("#")) {
++					i++;
++					StringTokenizer strTok = new StringTokenizer(line, " ");
++					
++					MyField field = (MyField)getFieldObject(i);
++					strTok.nextToken(); // throw away the field name
++					while(strTok.hasMoreTokens()) {
++						int newSensor = 1;
++						MySensor s = (MySensor)getSensorObject(0,0, Integer.parseInt(strTok.nextToken()));
++
++						if (s.getId() > max) {
++							max = s.getId();
++						}
++						
++						// have we seen this in the past? if so, 
++						// do addSensor + addField with previous object
++						for (int x = 0; x < jSensors.size(); x++) {
++							Sensor temp = (Sensor) jSensors.get(x);
++							if (s.getId() == temp.getId()) {
++								field.addSensor(temp);
++								temp.addField(field);
++								newSensor = 0;
++								break;
++							}
++						}
++						
++						if (newSensor == 1){
++							field.addSensor(s);
++							s.addField(field);
++							jSensors.add(s);
++						}
++					}
++					jFields.addElement(field);
++				}
++			}
++
++			origSensorNames = new Hashtable();			
++			Vector mappedSensorsVec = new Vector();
++			for(int c = 0; c < jSensors.size(); c++) {
++				Sensor temp = (Sensor) jSensors.elementAt(c);
++				origSensorNames.put(new Integer(c), new Integer(temp.getId()));
++				temp.setId(c);
++				mappedSensorsVec.add(c, temp);
++			}
++			
++			return new Matrix( mappedSensorsVec, jFields);
++		} catch(Exception e) {
++			System.out.println("Exception in getZorbasMatrix returning null. Reason:" + e.toString());
++			return null;
++		}
++	}
+ }
+diff -u -r -N slijepcevic-orig/WorstFirst.java slijepcevic-upd/WorstFirst.java
+--- slijepcevic-orig/WorstFirst.java	2003-07-06 18:01:04.000000000 +0300
++++ slijepcevic-upd/WorstFirst.java	2006-03-08 20:39:07.000000000 +0200
+@@ -135,16 +135,16 @@
+ 		int usedNodes = 0;
+ 		for (int i=0;i<step;i++) {
+ 			if (setCount[i] > maxCounter) maxCounter = setCount[i];
+-			Simulation.DBG(4,"");
+-			Simulation.DBG(4,"Set "+i+": "+setCount[i]);
++			Simulation.DBG(11,"");
++			Simulation.DBG(11,"Set "+i+": "+setCount[i]);
+ 			usedNodes = usedNodes + setCount[i];
+ 			for (int j=0;j<setCount[i];j++) {
+ 				Sensor sns = (Sensor)sensor.elementAt(set[i][j]);
+ 				double[] x = sns.getXY();
+-				Simulation.DBG(4,set[i][j]+"\t"+x[0]+" "+x[1]);
++				Simulation.DBG(11,set[i][j]+"\t"+x[0]+" "+x[1]);
+ 			}
+ 		}
+-		Simulation.DBG(4,"");
++		Simulation.DBG(11,"");
+ 		Statistics.wf(step,usedNodes);
+ 		Result res = new Result(step,maxCounter,setCount,set);
+ 		return res;
+@@ -159,6 +159,7 @@
+ 	 */
+ 	static public boolean doMore() {
+ 		for (int i=0;i<sensor.size();i++) {
++			
+ 			((MySensor)sensor.elementAt(i)).setAvailable();
+ 		}
+ 

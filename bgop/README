@@ -1,0 +1,26 @@
+In this directory you should find the following files:
+
+LICENSE: GPLv3 License file
+
+batch-simulation.pl: perl script for batch simulation of coverage algorithms
+
+evaluate.pl: perl script that evaluates if the output sensor sets are valid
+
+sim_4classes.pl: Implementation of the BGOP algorithm with fixed selection
+		 strategy (best->good->ok->poor) (Perl)
+
+sim_adaptive.pl: Implementation of the B{GOP} algorithm as presented in
+		 the ew2007 paper. (Perl)
+
+slijepcevic.tar.bz2: the original sources of the Slijepcevic algorithm
+		 (Java, copyright by Slijepcevic)
+
+slijepcevic-patch: a patch that makes the original Slijepcevic program output
+		 the same type of information as B{GOP}. It was used during
+		 the batch execution of our simulations.
+
+For any further information regarding this software please contact:
+
+Dimitris Glynos (daglyn/at/unipi/gr) or
+Dimitrios Zorbas (jim/at/students/cs/unipi/gr)
+
